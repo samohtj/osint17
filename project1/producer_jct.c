@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 	    print_help_info();
 	    return 0;
 	}
-    case 5:
+    case 4:
 	if (check_args(argv[1], argv[2], argv[3]) != 0) {
 	    /* Invalid arguments. Yell at user! */
 	    improper_args();
@@ -40,10 +40,22 @@ int main(int argc, char** argv) {
     }
 }
 
+/*
+ * Create a message and put in on the buffer.
+ */
 void produce() {
 
 
 
+}
+
+/*
+ * Create producer threads.
+ * @param num_producers Number of producer threads to create.
+ * @param num_messages Number of messages for each thread to create.
+ */
+void create_threads(int num_producers, int num_messages) {
+	/* Thread creating code goes here. */
 }
 
 /*
@@ -53,15 +65,28 @@ void print_help_info() {
     printf("PRODUCER PROCESS\n");
     printf("To use: ");
     printf("\tproducer_jct <BUFFER SIZE> <NUM PRODUCERS> <NUM MESSAGES>\n");
-	printf("\tBUFFER SIZE: ")
+    printf("\tBUFFER SIZE: Number of message objects that can be held in the buffer at once.");
 }
 
 /*
  * Check the validity of the arguments entered. They should all be integers.
- *
+ * TODO Fill this out!
  * @param a, b, c Strings parsed from the command line arguments.
  * @return 0 if arguments are valid, 1 otherwise.
  */
 int check_args(char * a, char * b, char * c) {
    return 0; 
+}
+
+void setup_buffer(int buffer_size) {
+	const int size = buffer_size;
+	const char *buffer_name = "JCT";
+	int shared_buffer = shm_open(name, O_CREAT | O_RDWR, 0666);
+	ftruncate(shared_buffer, size);
+	void * buffer_pointer;
+	buffer_pointer = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shared_buffer, 0);
+	if (buffer_pointer == MAP_FAILED) {
+		printf("Could not map shared buffer to memory.");
+	}// TODO This is not correct in any fashion.
+
 }

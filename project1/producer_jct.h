@@ -1,4 +1,9 @@
 #include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 #include <stdio.h>
 
 /*
@@ -20,3 +25,5 @@
 void produce();
 void print_help_info();
 int check_args(char *, char *, char *);
+void create_threads(int, int);
+void setup_buffer(int);
