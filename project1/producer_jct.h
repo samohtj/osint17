@@ -1,3 +1,10 @@
+/* 
+ * Jonathan Thomas
+ * CEG 4350 Fall 2017
+ * Project 1: Producer / Consumer Problem
+ * Creates producer processes that add messages to a buffer in shared memory space.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -5,11 +12,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdio.h>
-
-/*
- * Terminal option to print help information.
- */
-#define HELP_ARG "-h"
+#include "comm.h"
 
 /*
  *   Improper or invalid arguments have been enetered. Will print a message to

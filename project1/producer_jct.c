@@ -65,7 +65,9 @@ void print_help_info() {
     printf("PRODUCER PROCESS\n");
     printf("To use: ");
     printf("\tproducer_jct <BUFFER SIZE> <NUM PRODUCERS> <NUM MESSAGES>\n");
-    printf("\tBUFFER SIZE: Number of message objects that can be held in the buffer at once.");
+    printf("\tBUFFER SIZE  : Number of message objects that can be held in the buffer at once.\n");
+    printf("\tNUM PRODUCERS: Number of producer processes to create.\n");
+    printf("\tNUM MESSAGES : Total number of messages to place on the buffer.\n");
 }
 
 /*
@@ -81,7 +83,7 @@ int check_args(char * a, char * b, char * c) {
 void setup_buffer(int buffer_size) {
 	const int size = buffer_size;
 	const char *buffer_name = "JCT";
-	int shared_buffer = shm_open(name, O_CREAT | O_RDWR, 0666);
+	int shared_buffer = shm_open(buffer_name, O_CREAT | O_RDWR, 0666);
 	ftruncate(shared_buffer, size);
 	void * buffer_pointer;
 	buffer_pointer = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shared_buffer, 0);
