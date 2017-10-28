@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "comm.h"
 
 /*
@@ -25,8 +26,10 @@
  */
 #define improper_num_arguments() improper_args()
 
-void produce();
+void* produce(void*);
 void print_help_info();
 int check_args(char *, char *, char *);
 void create_threads(int, int);
 void setup_buffer(int);
+void create_shared_mem();
+void cleanup();

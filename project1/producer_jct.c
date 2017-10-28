@@ -7,6 +7,8 @@
 
 #include "producer_jct.h"
 
+int num_messages = 100;
+
 /*
  * Main entry point. Parses terminal arguments to determine what action to take.
  */
@@ -28,11 +30,17 @@ int main(int argc, char** argv) {
 	    return 1;
 	} else {
 	    /* Actually run the program */
+        create_shared_mem();
+        create_threads(atoi(argv[2]), atoi(argv[3]));
+        cleanup();
 	    return 0;
 	}
     case 1:
 		/* Run the program with default arguments. */
-	return 0;
+        create_shared_mem();
+        create_threads(5, 100);
+        cleanup();
+	    return 0;
     default:
 		/* Improper number of arguments. Print proper useage to screen*/
 		improper_num_arguments();
@@ -41,21 +49,40 @@ int main(int argc, char** argv) {
 }
 
 /*
- * Create a message and put in on the buffer.
+ * Create messages and put them on the buffer.
+ * (This is what you pass to pthread_create)
  */
-void produce() {
+void* produce(void* arg) {
+    printf("Producer created!\n");
 
-
-
+    pthread_exit(0);
 }
 
 /*
  * Create producer threads.
- * @param num_producers Number of producer threads to create.
- * @param num_messages Number of messages for each thread to create.
+ * @param num_producers: Number of producer threads to create.
+ * @param num_messages : Total number of messages for all threads to create.
  */
 void create_threads(int num_producers, int num_messages) {
 	/* Thread creating code goes here. */
+    /* TODO Pass it in its thread id, so it can prepend it to the message */
+    void* param;
+    pthread_t thread_ids[num_producers];
+    /* Create N threads */
+    for (int i = 0; i < num_producers; i++) {
+        pthread_attr_t attributes;
+        pthread_attr_init(&attributes);
+        pthread_create(&thread_ids[i], &attributes, produce, param);
+    }
+
+    /* Wait for threads to finish */
+    for (int i = 0; i < num_producers; i++) {
+        pthread_join(thread_ids[i], NULL);
+    }
+}
+
+void create_shared_mem() {
+    printf("Creating shared memory.\n");
 }
 
 /*
@@ -68,18 +95,22 @@ void print_help_info() {
     printf("\tBUFFER SIZE  : Number of message objects that can be held in the buffer at once.\n");
     printf("\tNUM PRODUCERS: Number of producer processes to create.\n");
     printf("\tNUM MESSAGES : Total number of messages to place on the buffer.\n");
+    printf("\tALL ARGS MUST BE POSITIVE INTEGER VALUES.\n");
 }
 
 /*
- * Check the validity of the arguments entered. They should all be integers.
- * TODO Fill this out!
- * @param a, b, c Strings parsed from the command line arguments.
- * @return 0 if arguments are valid, 1 otherwise.
+ * Check the validity of the arguments entered. They should all be 
+ * integers, and should all be positive.
+ * @param a, b, c: Strings parsed from the command line arguments.
+ * @return       : 0 if arguments are valid, 1 otherwise.
  */
 int check_args(char * a, char * b, char * c) {
-   return 0; 
+    return (atoi(a) < 0 || atoi(b) < 0 || atoi(c) < 0)? 1:0; 
 }
 
+/*
+ * Set up the shared memory buffer that messages are added to.
+ */
 void setup_buffer(int buffer_size) {
 	const int size = buffer_size;
 	const char *buffer_name = "JCT";
@@ -91,4 +122,8 @@ void setup_buffer(int buffer_size) {
 		printf("Could not map shared buffer to memory.");
 	}// TODO This is not correct in any fashion.
 
+}
+
+void cleanup() {
+    printf("Running cleanup.\n");
 }
