@@ -146,7 +146,10 @@ int create_shared_mem(int size) {
     printf("Creating shm\n");
     int shm_filedesc;
     shm_unlink(BUFF_NAME);
+    printf("Error here 1\n");
     shm_filedesc = shm_open(BUFF_NAME, O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_filedesc, 10000);
+    printf("error here 2\n");
     buff_ptr = mmap(0, MAX_BUFF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_filedesc, 0);
     if (buff_ptr == MAP_FAILED) {
         printf("Failed to map shared memory buffer!\n");
