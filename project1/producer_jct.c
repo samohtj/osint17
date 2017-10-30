@@ -62,11 +62,14 @@ void* produce(void* arg) {
     while (num_messages > 0) {
         /* START OF CRITICAL SECTION */
         // Create message
-        // Add to buffer
-        char* buf;
-        snprintf(buf, 20, "%d_mes%d", (unsigned int) this_id, i);
-        printf("Message created by producer %d!\n", (unsigned int) this_id);
+        
+        char buf[20];
+        snprintf(buf, sizeof buf, "%d_mes%d", (unsigned int) this_id, i);
+        printf("Message created by producer %d! Message text: %s\n", 
+            (unsigned int) this_id,
+            buf);
         i++;
+        // Add to buffer
         num_messages--;
         /* END OF CRITICAL SECTION */
     }

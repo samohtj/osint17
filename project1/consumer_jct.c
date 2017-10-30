@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
 	    }
     case 1:
 	    /* Run the program with default arguments. */
-	    create_shared_mem();
+	    create_shared_mem(MAX_BUFF_SIZE);
 	    create_consumers(5);
 	    cleanup();
 	    return 0;
