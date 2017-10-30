@@ -8,6 +8,9 @@
 #include "consumer_jct.h"
 
 void* buff_ptr;
+sem_t* access_mtx;
+sem_t* full_sem;
+sem_t* empty_sem;
 
 /*
  * Main entry point. Parses terminal arguments to determine what action to take.
@@ -31,14 +34,18 @@ int main(int argc, char** argv) {
 	    } else {
 	        /* Actually run the program */
 	        // TODO Make buffer always hold 100 things, but the max buffer makes the pointer wrap around????
-	        create_shared_mem(MAX_BUFF_SIZE);
+	        if (create_shared_mem(MAX_BUFF_SIZE) == 1) {
+	            return 1;
+	        }
 	        create_consumers(atoi(argv[1]));
 	        cleanup();
 	        return 0;
 	    }
     case 1:
 	    /* Run the program with default arguments. */
-	    create_shared_mem(MAX_BUFF_SIZE);
+	    if (create_shared_mem(MAX_BUFF_SIZE) == 1) {
+	        return 1;
+	    }
 	    create_consumers(5);
 	    cleanup();
 	    return 0;
@@ -78,7 +85,7 @@ void create_consumers(int num_consumers) {
  * and forth.
  * @param size: number of message pointers that the buffer can hold
  */
-void create_shared_mem(int size) {
+int create_shared_mem(int size) {
     if (size > MAX_BUFF_SIZE) {
         size = MAX_BUFF_SIZE;
     } else if (size < 1) {
@@ -91,14 +98,62 @@ void create_shared_mem(int size) {
     buff_ptr = mmap(0, MAX_BUFF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_filedesc, 0);
     if (buff_ptr == MAP_FAILED) {
         printf("Failed to map shared memory buffer!\n");
-        return;
-    } else {
-        printf("Shared memory map succeeded!\n");
+        return 1;
     }
+    
+    /* Create semaphores */
+    /* Access mutex */
+    if (sem_unlink(ACCESS_MTX) == -1 && errno != ENOENT) {
+        printf("Error removing semaphore %s\n", ACCESS_MTX);
+        return 1; 
+    }
+    
+    if ((access_mtx = sem_open(ACCESS_MTX, O_CREAT, 0666, 1)) == SEM_FAILED) {
+        printf("Error creating semaphore %s\n", ACCESS_MTX);
+        return 1;
+    }
+    
+    /* Full counter semaphore */
+    if (sem_unlink(FULL_SEM) == -1 && errno != ENOENT) {
+        printf("Error removing semaphore %s\n", FULL_SEM);
+        return 1;
+    }
+    
+    if ((full_sem = sem_open(FULL_SEM, O_CREAT, 0666, 0)) == SEM_FAILED) {
+        printf("Error creating semaphore %s\n", FULL_SEM);
+        return 1;
+    }
+    
+    /* Empty counter semaphore */
+    if (sem_unlink(EMPTY_SEM) == -1 && errno != ENOENT) {
+        printf("Error removing semaphore %s\n", EMPTY_SEM);
+        return 1;
+    }
+    
+    if ((empty_sem = sem_open(EMPTY_SEM, O_CREAT, 0666, size)) == SEM_FAILED) {
+        printf("Error creating semaphore %s\n", EMPTY_SEM);
+        return 1;
+    }
+    return 0;
 }
 
 void cleanup() {
-    printf("Cleaning up shared memory space!\n");
+    printf("Running cleanup.\n");
+    /* Destroy all semaphores */
+    /* Access mutex */
+    if (sem_unlink(ACCESS_MTX) == -1) {
+        printf("Error removing semaphore %s\n", ACCESS_MTX);
+    }
+    
+    /* Full counter semaphore */
+    if (sem_unlink(FULL_SEM) == -1) {
+        printf("Error removing semaphore %s\n", FULL_SEM);
+    }
+    
+    /* Empty counter semaphore */
+    if (sem_unlink(EMPTY_SEM) == -1) {
+        printf("Error removing semaphore %s\n", EMPTY_SEM);
+    }
 }
 
 /*

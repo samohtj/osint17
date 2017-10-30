@@ -14,6 +14,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <semaphore.h>
+#include <errno.h>
 
 
 // Terminal option to print help information.
@@ -22,3 +24,7 @@
 // Buffer is not allowed to hold more than 100 things.
 #define MAX_BUFF_SIZE 100
 #define BUFF_NAME "JCT"
+
+#define ACCESS_MTX "JCT_Access_mutex"
+#define FULL_SEM "JCT_Full_semaphore"
+#define EMPTY_SEM "JCT_Empty_semaphore"

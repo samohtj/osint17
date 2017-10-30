@@ -10,6 +10,9 @@
 int num_messages = 100;
 int buff_size = 10;
 void* buff_ptr;
+sem_t* access_mtx;
+sem_t* full_sem;
+sem_t* empty_sem;
 
 /*
  * Main entry point. Parses terminal arguments to determine what action to take.
@@ -32,7 +35,9 @@ int main(int argc, char** argv) {
 	    return 1;
 	} else {
 	    /* Actually run the program */
-        create_shared_mem(atoi(argv[1]));
+        if (create_shared_mem(atoi(argv[1])) == 1) {
+            return 1;
+        }
         num_messages = atoi(argv[3]);
         create_threads(atoi(argv[2]));
         cleanup();
@@ -40,7 +45,9 @@ int main(int argc, char** argv) {
 	}
     case 1:
 		/* Run the program with default arguments. */
-        create_shared_mem(10);
+        if (create_shared_mem(10 == 1)) {
+            return 1;
+        }
         create_threads(5);
         cleanup();
 	    return 0;
@@ -61,6 +68,14 @@ void* produce(void* arg) {
     int i = 0;
     while (num_messages > 0) {
         /* START OF CRITICAL SECTION */
+        /* Obtain access to the buffer */
+        if (sem_wait(access_mtx) != 0) {
+            printf("Error accessing shared memory.\n");
+            continue;
+        }
+        
+        sem_wait(empty_sem);
+        
         // Create message
         
         char buf[20];
@@ -71,6 +86,9 @@ void* produce(void* arg) {
         i++;
         // Add to buffer
         num_messages--;
+        
+        sem_post(full_sem);
+        sem_post(access_mtx);
         /* END OF CRITICAL SECTION */
     }
     pthread_exit(0);
@@ -102,10 +120,13 @@ void create_threads(int num_producers) {
 /*
  * Creates a shared memory buffer with the name JCT that the
  * producer and consumer processes can use to pass data back
- * and forth.
+ * and forth. Also creates semaphores to control access to the
+ * shared buffer.
  * @param size: number of message pointers that the buffer can hold
+ * @return    : 0 if succeeded, 1 if failed.
  */
-void create_shared_mem(int size) {
+int create_shared_mem(int size) {
+    /* Create shared memory buffer */
     if (size > MAX_BUFF_SIZE) {
         size = MAX_BUFF_SIZE;
     } else if (size < 1) {
@@ -118,10 +139,43 @@ void create_shared_mem(int size) {
     buff_ptr = mmap(0, MAX_BUFF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_filedesc, 0);
     if (buff_ptr == MAP_FAILED) {
         printf("Failed to map shared memory buffer!\n");
-        return;
-    } else {
-        printf("Shared memory map succeeded!\n");
+        return 1;
     }
+    
+    /* Create semaphores */
+    /* Access mutex */
+    if (sem_unlink(ACCESS_MTX) == -1 && errno != ENOENT) {
+        printf("Error removing semaphore %s\n", ACCESS_MTX);
+        return 1; 
+    }
+    
+    if ((access_mtx = sem_open(ACCESS_MTX, O_CREAT, 0666, 1)) == SEM_FAILED) {
+        printf("Error creating semaphore %s\n", ACCESS_MTX);
+        return 1;
+    }
+    
+    /* Full counter semaphore */
+    if (sem_unlink(FULL_SEM) == -1 && errno != ENOENT) {
+        printf("Error removing semaphore %s\n", FULL_SEM);
+        return 1;
+    }
+    
+    if ((full_sem = sem_open(FULL_SEM, O_CREAT, 0666, 0)) == SEM_FAILED) {
+        printf("Error creating semaphore %s\n", FULL_SEM);
+        return 1;
+    }
+    
+    /* Empty counter semaphore */
+    if (sem_unlink(EMPTY_SEM) == -1 && errno != ENOENT) {
+        printf("Error removing semaphore %s\n", EMPTY_SEM);
+        return 1;
+    }
+    
+    if ((empty_sem = sem_open(EMPTY_SEM, O_CREAT, 0666, size)) == SEM_FAILED) {
+        printf("Error creating semaphore %s\n", EMPTY_SEM);
+        return 1;
+    }
+    return 0;
 }
 
 /*
@@ -154,4 +208,20 @@ int check_args(char * a, char * b, char * c) {
 
 void cleanup() {
     printf("Running cleanup.\n");
+    /* Destroy all semaphores */
+    /* Access mutex */
+    if (sem_unlink(ACCESS_MTX) == -1) {
+        printf("Error removing semaphore %s\n", ACCESS_MTX);
+    }
+    
+    /* Full counter semaphore */
+    if (sem_unlink(FULL_SEM) == -1) {
+        printf("Error removing semaphore %s\n", FULL_SEM);
+    }
+    
+    /* Empty counter semaphore */
+    if (sem_unlink(EMPTY_SEM) == -1) {
+        printf("Error removing semaphore %s\n", EMPTY_SEM);
+    }
+    
 }

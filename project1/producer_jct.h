@@ -24,5 +24,5 @@ void* produce(void*);
 void print_help_info();
 int check_args(char *, char *, char *);
 void create_threads(int);
-void create_shared_mem(int);
+int create_shared_mem(int);
 void cleanup(void);
