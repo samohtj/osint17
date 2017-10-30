@@ -5,6 +5,11 @@
  * Creates producer processes that add messages to a buffer in shared memory space.
  */
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <pthread.h>
+
 /*
  * Terminal option to print help information.
  */

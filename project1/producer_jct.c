@@ -31,14 +31,15 @@ int main(int argc, char** argv) {
 	} else {
 	    /* Actually run the program */
         create_shared_mem();
-        create_threads(atoi(argv[2]), atoi(argv[3]));
+        num_messages = atoi(argv[3]);
+        create_threads(atoi(argv[2]));
         cleanup();
 	    return 0;
 	}
     case 1:
 		/* Run the program with default arguments. */
         create_shared_mem();
-        create_threads(5, 100);
+        create_threads(5);
         cleanup();
 	    return 0;
     default:
@@ -54,7 +55,19 @@ int main(int argc, char** argv) {
  */
 void* produce(void* arg) {
     printf("Producer created!\n");
-
+    pthread_t this_id = pthread_self();
+    int i = 0;
+    while (num_messages > 0) {
+        /* START OF CRITICAL SECTION */
+        // Create message
+        // Add to buffer
+        char* buf;
+        snprintf(buf, 20, "%d_mes%d", (unsigned int) this_id, i);
+        printf("Message created by producer %d!\n", (unsigned int) this_id);
+        i++;
+        num_messages--;
+        /* END OF CRITICAL SECTION */
+    }
     pthread_exit(0);
 }
 
@@ -63,16 +76,16 @@ void* produce(void* arg) {
  * @param num_producers: Number of producer threads to create.
  * @param num_messages : Total number of messages for all threads to create.
  */
-void create_threads(int num_producers, int num_messages) {
+void create_threads(int num_producers) {
 	/* Thread creating code goes here. */
     /* TODO Pass it in its thread id, so it can prepend it to the message */
-    void* param;
+    
     pthread_t thread_ids[num_producers];
     /* Create N threads */
     for (int i = 0; i < num_producers; i++) {
         pthread_attr_t attributes;
         pthread_attr_init(&attributes);
-        pthread_create(&thread_ids[i], &attributes, produce, param);
+        pthread_create(&thread_ids[i], &attributes, produce, NULL);
     }
 
     /* Wait for threads to finish */
@@ -95,7 +108,7 @@ void print_help_info() {
     printf("\tBUFFER SIZE  : Number of message objects that can be held in the buffer at once.\n");
     printf("\tNUM PRODUCERS: Number of producer processes to create.\n");
     printf("\tNUM MESSAGES : Total number of messages to place on the buffer.\n");
-    printf("\tALL ARGS MUST BE POSITIVE INTEGER VALUES.\n");
+    printf("\tAll arguments must be positive integers between 1 and 100 (inclusive).\n");
 }
 
 /*
@@ -105,7 +118,12 @@ void print_help_info() {
  * @return       : 0 if arguments are valid, 1 otherwise.
  */
 int check_args(char * a, char * b, char * c) {
-    return (atoi(a) < 0 || atoi(b) < 0 || atoi(c) < 0)? 1:0; 
+    int first = atoi(a);
+    int second = atoi(b);
+    int third = atoi(c);
+    return (first <= 0 || first > 100 
+        || second <= 0 || second > 100 
+        || third <= 0 || third > 100)? 1:0; 
 }
 
 /*
