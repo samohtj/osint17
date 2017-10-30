@@ -26,3 +26,4 @@ int check_args(char *, char *, char *);
 void create_threads(int);
 int create_shared_mem(int);
 void cleanup(void);
+void buffer_push(fifo_buffer *, char *);

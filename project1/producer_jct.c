@@ -8,8 +8,9 @@
 #include "producer_jct.h"
 
 int num_messages = 100;
+int nm_original = 100;
 int buff_size = 10;
-void* buff_ptr;
+fifo_buffer* buff_ptr;
 sem_t* access_mtx;
 sem_t* full_sem;
 sem_t* empty_sem;
@@ -38,14 +39,15 @@ int main(int argc, char** argv) {
         if (create_shared_mem(atoi(argv[1])) == 1) {
             return 1;
         }
-        num_messages = atoi(argv[3]);
+        num_messages = nm_original = atoi(argv[3]);
         create_threads(atoi(argv[2]));
         cleanup();
 	    return 0;
 	}
     case 1:
 		/* Run the program with default arguments. */
-        if (create_shared_mem(10 == 1)) {
+		printf("Default arguments\n");
+        if (create_shared_mem(10) == 1) {
             return 1;
         }
         create_threads(5);
@@ -63,33 +65,43 @@ int main(int argc, char** argv) {
  * (This is what you pass to pthread_create)
  */
 void* produce(void* arg) {
-    printf("Producer created!\n");
     pthread_t this_id = pthread_self();
     int i = 0;
     while (num_messages > 0) {
         /* START OF CRITICAL SECTION */
+        
         /* Obtain access to the buffer */
         if (sem_wait(access_mtx) != 0) {
             printf("Error accessing shared memory.\n");
             continue;
         }
-        
+        /* If there are no empty spots, release the buffer and give the consumer a chance to remove an item */
+        int emptyval;
+        sem_getvalue(empty_sem, &emptyval);
+        if (emptyval <= 0) {
+            sem_post(access_mtx);
+            continue;
+        }
         sem_wait(empty_sem);
-        
+
         // Create message
         
         char buf[20];
-        snprintf(buf, sizeof buf, "%d_mes%d", (unsigned int) this_id, i);
-        printf("Message created by producer %d! Message text: %s\n", 
-            (unsigned int) this_id,
-            buf);
-        i++;
+        snprintf(buf, sizeof buf, "%d_msg_%d", (unsigned int) this_id, i);
         // Add to buffer
+        buffer_push(buff_ptr, buf);
         num_messages--;
-        
+        i++;
+        /* END OF CRITICAL SECTION */
         sem_post(full_sem);
         sem_post(access_mtx);
-        /* END OF CRITICAL SECTION */
+        
+        printf("Producer %d produced item %s (%d/%d)\n", 
+            (unsigned int) this_id,
+            buf,
+            nm_original - num_messages,
+            nm_original);
+        
     }
     pthread_exit(0);
 }
@@ -101,7 +113,6 @@ void* produce(void* arg) {
  */
 void create_threads(int num_producers) {
 	/* Thread creating code goes here. */
-    /* TODO Pass it in its thread id, so it can prepend it to the message */
     
     pthread_t thread_ids[num_producers];
     /* Create N threads */
@@ -132,15 +143,18 @@ int create_shared_mem(int size) {
     } else if (size < 1) {
         size = 1;
     }
-    printf("Creating shared memory.\n");
+    printf("Creating shm\n");
     int shm_filedesc;
+    shm_unlink(BUFF_NAME);
     shm_filedesc = shm_open(BUFF_NAME, O_CREAT | O_RDWR, 0666);
-    ftruncate(shm_filedesc, MAX_BUFF_SIZE);
     buff_ptr = mmap(0, MAX_BUFF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_filedesc, 0);
     if (buff_ptr == MAP_FAILED) {
         printf("Failed to map shared memory buffer!\n");
         return 1;
     }
+    printf("Created");
+    buff_ptr->size = size;
+    buff_ptr->head = buff_ptr->tail = 0;
     
     /* Create semaphores */
     /* Access mutex */
@@ -207,7 +221,6 @@ int check_args(char * a, char * b, char * c) {
 }
 
 void cleanup() {
-    printf("Running cleanup.\n");
     /* Destroy all semaphores */
     /* Access mutex */
     if (sem_unlink(ACCESS_MTX) == -1) {
@@ -224,4 +237,13 @@ void cleanup() {
         printf("Error removing semaphore %s\n", EMPTY_SEM);
     }
     
+}
+
+void buffer_push(fifo_buffer* buff, char* data) {
+    int next = (buff->head + 1) % buff_size;
+    if (next == buff->tail) {
+        return;
+    }
+    strcpy(buff->buffer + (buff->head * 20), data);
+    buff->head = next;
 }

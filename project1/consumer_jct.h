@@ -27,5 +27,6 @@ void print_help_info();
 int check_args(char *, char *);
 void create_consumers(int);
 void* consume(void*);
-int create_shared_mem(int);
+int create_shared_mem();
 void cleanup(void);
+void buffer_pop(fifo_buffer *, char *);

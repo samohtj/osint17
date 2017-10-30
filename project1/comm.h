@@ -18,13 +18,23 @@
 #include <errno.h>
 
 
-// Terminal option to print help information.
+/* Terminal option to print help information. */
 #define HELP_ARG "-h"
 
-// Buffer is not allowed to hold more than 100 things.
+/* Buffer is not allowed to hold more than 100 things. */
 #define MAX_BUFF_SIZE 100
 #define BUFF_NAME "JCT"
 
+/* Mutex and semaphore name tags */
 #define ACCESS_MTX "JCT_Access_mutex"
 #define FULL_SEM "JCT_Full_semaphore"
 #define EMPTY_SEM "JCT_Empty_semaphore"
+
+typedef struct {
+/* Command decision: Messages shall be no more than 20 chars long, and there shall
+   be no more than 100 of them. Standard disclaimer: this is a hack. */
+    char buffer[20*100];
+    int head;
+    int tail;
+    int size;
+} fifo_buffer;
