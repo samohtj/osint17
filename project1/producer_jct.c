@@ -8,6 +8,8 @@
 #include "producer_jct.h"
 
 int num_messages = 100;
+int buff_size = 10;
+void* buff_ptr;
 
 /*
  * Main entry point. Parses terminal arguments to determine what action to take.
@@ -30,7 +32,7 @@ int main(int argc, char** argv) {
 	    return 1;
 	} else {
 	    /* Actually run the program */
-        create_shared_mem();
+        create_shared_mem(atoi(argv[1]));
         num_messages = atoi(argv[3]);
         create_threads(atoi(argv[2]));
         cleanup();
@@ -38,7 +40,7 @@ int main(int argc, char** argv) {
 	}
     case 1:
 		/* Run the program with default arguments. */
-        create_shared_mem();
+        create_shared_mem(10);
         create_threads(5);
         cleanup();
 	    return 0;
@@ -94,8 +96,29 @@ void create_threads(int num_producers) {
     }
 }
 
-void create_shared_mem() {
+/*
+ * Creates a shared memory buffer with the name JCT that the
+ * producer and consumer processes can use to pass data back
+ * and forth.
+ * @param size: number of message pointers that the buffer can hold
+ */
+void create_shared_mem(int size) {
+    if (size > MAX_BUFF_SIZE) {
+        size = MAX_BUFF_SIZE;
+    } else if (size < 1) {
+        size = 1;
+    }
     printf("Creating shared memory.\n");
+    int shm_filedesc;
+    shm_filedesc = shm_open(BUFF_NAME, O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_filedesc, MAX_BUFF_SIZE);
+    buff_ptr = mmap(0, MAX_BUFF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_filedesc, 0);
+    if (buff_ptr == MAP_FAILED) {
+        printf("Failed to map shared memory buffer!\n");
+        return;
+    } else {
+        printf("Shared memory map succeeded!\n");
+    }
 }
 
 /*
@@ -124,22 +147,6 @@ int check_args(char * a, char * b, char * c) {
     return (first <= 0 || first > 100 
         || second <= 0 || second > 100 
         || third <= 0 || third > 100)? 1:0; 
-}
-
-/*
- * Set up the shared memory buffer that messages are added to.
- */
-void setup_buffer(int buffer_size) {
-	const int size = buffer_size;
-	const char *buffer_name = "JCT";
-	int shared_buffer = shm_open(buffer_name, O_CREAT | O_RDWR, 0666);
-	ftruncate(shared_buffer, size);
-	void * buffer_pointer;
-	buffer_pointer = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shared_buffer, 0);
-	if (buffer_pointer == MAP_FAILED) {
-		printf("Could not map shared buffer to memory.");
-	}// TODO This is not correct in any fashion.
-
 }
 
 void cleanup() {

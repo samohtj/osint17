@@ -7,6 +7,8 @@
 
 #include "consumer_jct.h"
 
+void* buff_ptr;
+
 /*
  * Main entry point. Parses terminal arguments to determine what action to take.
  */
@@ -28,7 +30,8 @@ int main(int argc, char** argv) {
 	        return 1;
 	    } else {
 	        /* Actually run the program */
-	        create_shared_mem();
+	        // TODO Make buffer always hold 100 things, but the max buffer makes the pointer wrap around????
+	        create_shared_mem(MAX_BUFF_SIZE);
 	        create_consumers(atoi(argv[1]));
 	        cleanup();
 	        return 0;
@@ -69,8 +72,29 @@ void create_consumers(int num_consumers) {
     }
 }
 
-void create_shared_mem() {
-    printf("Creating shared memory space!\n");
+/*
+ * Creates a shared memory buffer with the name JCT that the
+ * producer and consumer processes can use to pass data back
+ * and forth.
+ * @param size: number of message pointers that the buffer can hold
+ */
+void create_shared_mem(int size) {
+    if (size > MAX_BUFF_SIZE) {
+        size = MAX_BUFF_SIZE;
+    } else if (size < 1) {
+        size = 1;
+    }
+    printf("Creating shared memory.\n");
+    int shm_filedesc;
+    shm_filedesc = shm_open(BUFF_NAME, O_CREAT | O_RDWR, 0666);
+    ftruncate(shm_filedesc, MAX_BUFF_SIZE);
+    buff_ptr = mmap(0, MAX_BUFF_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_filedesc, 0);
+    if (buff_ptr == MAP_FAILED) {
+        printf("Failed to map shared memory buffer!\n");
+        return;
+    } else {
+        printf("Shared memory map succeeded!\n");
+    }
 }
 
 void cleanup() {

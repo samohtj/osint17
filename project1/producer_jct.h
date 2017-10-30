@@ -5,10 +5,7 @@
  * Creates producer processes that add messages to a buffer in shared memory space.
  */
 
-#include <fcntl.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
+
 
 #include "comm.h"
 
@@ -27,6 +24,5 @@ void* produce(void*);
 void print_help_info();
 int check_args(char *, char *, char *);
 void create_threads(int);
-void setup_buffer(int);
-void create_shared_mem(void);
+void create_shared_mem(int);
 void cleanup(void);

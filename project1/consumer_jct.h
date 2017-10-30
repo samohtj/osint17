@@ -27,5 +27,5 @@ void print_help_info();
 int check_args(char *, char *);
 void create_consumers(int);
 void* consume(void*);
-void create_shared_mem(void);
+void create_shared_mem(int);
 void cleanup(void);
