@@ -40,6 +40,9 @@ elseif(ID==3)
     else
         calllib('dynamixel', 'dxl_write_word',ID,30,GoalPos);
     end
+	
+elseif(ID==4 || ID == 5)
+	calllib('dynamixel', 'dxl_write_word', ID, 30, GoalPos);
 end
 
         
