@@ -5,7 +5,7 @@ orthogonalArm = 1350;
 flatArm = 3000; 
 bentArm = 1500; 
 
-speed = 200; % change speed from here
+speed = 300; % change speed from here
 
 Motor3Pos = calllib('dynamixel','dxl_read_word',3,36);
 Motor2Pos = calllib('dynamixel','dxl_read_word',2,36); 

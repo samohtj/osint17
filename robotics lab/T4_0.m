@@ -14,5 +14,5 @@ function [X] = T4_0(thetas)
    x = r4_0(1);
    y = r4_0(2);
    z = r4_0(3);
-   X=[x;y;z;1]
+   X=[x;y;z;1];
 end
