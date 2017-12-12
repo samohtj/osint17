@@ -1,4 +1,4 @@
-#include"y86.h"
+#include"y86_jct.h"
 #define FALSE 0
 #define TRUE 1
 
@@ -20,11 +20,11 @@ int main(int argc, char ** argv)
     /* 
     TODO 1: read the file in as a binary file 
     */
-    f = fopen(input, "r"); 
+    f = fopen(input, "rb"); 
     printf("Opened file %s\n", input);
     parse(f);
     printf("Parsed %s\n", input);
-    decode();
+    //decode();
     return 0;
 }
 
@@ -46,7 +46,7 @@ void setup()
 ************************************************************************/
 int parse(FILE * f)
 {
-    char c;
+    int c;
     programLength = 0;
     int i = 0;
     if (f == 0)
@@ -58,15 +58,16 @@ int parse(FILE * f)
     { /* c0af   c 0af  c0 af  c0a f */
         while ((c = fgetc(f)) != EOF )
         {
-            char t = fgetc(f);
-            c = toHex(c);
-            t = toHex(t);
-            p[i] = c<<4 | t;
+            //char t = fgetc(f);
+            printf("%02x|\n", c);
+            //c = toHex(c);
+            //t = toHex(t);
+            p[i] = (char) c & 0x000000ff;
             i++; programLength++;
-            printf("%x ", p[i] & 0xff);
+            //printf("%02x\n", p[i] & 0xff);
         }
     }
-    printf("\n");
+    printf("\nProgram length: %d bytes\n", programLength);
     fclose(f);
     return 0;
 }
@@ -801,7 +802,7 @@ void mrmovl(char reg, int offset)
 }
 
 /** Sets flags based on the last result */
-void setFlags(int a, int b, int result, int isAdd)
+void setFlags(int a, int b, int result)
 {
     /* TODO 7: Implement the setFlags function */
 }
